@@ -1,0 +1,70 @@
+// Most basic DynASM JIT; generates a trivial function that
+// returns a given value, and executes it.
+// code by Josh Haberman
+
+// DynASM directives.
+|.arch x64
+|.actionlist actions
+
+// This define affects "|" DynASM lines.  "Dst" must
+// resolve to a dasm_State** that points to a dasm_State*.
+#define Dst &state
+
+int main(int argc, char *argv[]) {
+  if (argc < 3) {
+    fprintf(stderr, "Usage: %s <integer> <float>\n", argv[0]);
+    return 1;
+  }
+
+  int num = atoi(argv[1]);
+  float fnum = atof(argv[2]);
+
+  dasm_State *state;
+  dasm_init(&state, 1);
+  dasm_setup(&state, actions);
+
+  // Generate the code.  Each line appends to a buffer in
+  // "state", but the code in this buffer is not fully linked
+  // yet because labels can be referenced before they are
+  // defined.
+  //
+  // The run-time value of C variable "num" is substituted
+  // into the immediate value of the instruction.
+  |  mov eax, num
+  |  ret
+
+  // Link the code and write it to executable memory.
+  int (*fptr)() = jitcode(&state);
+
+  // Call the JIT-ted function.
+  int ret = fptr();
+  assert(num == ret);
+
+  // Free the machine code.
+  free_jitcode(fptr);
+
+  dasm_free(&state);
+
+  dasm_init(&state, 1);
+  dasm_setup(&state, actions);
+
+  |  mov eax, num
+  |  mov eax, fnum
+  |  movd xmm0, eax
+  |  movd xmm1, eax
+  |  movd xmm2, eax
+  |  movd xmm3, eax
+  /* |  shufps xmm0, xmm0, 0 */
+  /* |  addps xmm0, xmm0 */
+  |  ret
+
+  float (*fltf)() = jitcode(&state);
+  float fret = fltf();
+  printf("the float value is %f == %f (0x%X == 0x%X))\n", fnum, fret,
+          *(int *)&fnum, *(int *)&fret);
+  free_jitcode(fltf);
+
+  dasm_free(&state);
+
+  return ret;
+}

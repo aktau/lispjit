@@ -1,3 +1,6 @@
+# Project-specific
+src/prototype.h
+
 # Object files
 *.o
 *.ko

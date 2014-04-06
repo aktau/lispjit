@@ -1,0 +1,7 @@
+instructions
+============
+- PSHUFD is for integers, SHUFPS is for floats:
+  http://board.flatassembler.net/topic.php?t=13102, also PSHUFD seems to be
+  the only instruction that can take 4 words from the same register and
+  shuffle them. Seems a bit strange but a poster says that...
+
