@@ -1,6 +1,8 @@
-// Driver file for DynASM-based JITs.
-//
-// This code is in the Public Domain.
+/**
+ * Driver file for DynASM-based JITs.
+ *
+ * This code is in the Public Domain. Original idea by Joshua Haberman.
+ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -14,36 +16,44 @@ void free_jitcode(void *code);
 
 #include JIT
 
+/* either succeeds or exists the program, you will get a pointer to a
+ * callable function. */
 void *jitcode(dasm_State **state) {
-  size_t size;
-  int dasm_status = dasm_link(state, &size);
-  assert(dasm_status == DASM_S_OK);
+  /* optional sanity check */
+  int status = dasm_checkstep(state, -1);
+  assert(status == DASM_S_OK);
 
-  // Allocate memory readable and writable so we can
-  // write the encoded instructions there.
-  char *mem = mmap(NULL, size + sizeof(size_t),
-           PROT_READ | PROT_WRITE,
-                   MAP_ANON | MAP_PRIVATE, -1, 0);
+  size_t size;
+
+  /* make sure we can link the code before allocating a code page */
+  status = dasm_link(state, &size);
+  assert(status == DASM_S_OK);
+
+  /* allocate memory readable and writable so we can write the encoded
+   * instructions there. Add sizeof(size_t) bytes to store the size of the
+   * page we allocated. */
+  char *mem = mmap(NULL,
+          size + sizeof(size_t),
+          PROT_READ | PROT_WRITE,
+          MAP_ANON | MAP_PRIVATE,
+          -1, 0);
   assert(mem != MAP_FAILED);
 
-  // Store length at the beginning of the region, so we
-  // can free it without additional context.
+  /* store length at the beginning of the region, so we
+   * can free it without additional context. */
   *(size_t*)mem = size;
   void *ret = mem + sizeof(size_t);
 
-  dasm_encode(state, ret);
+  status = dasm_encode(state, ret);
+  assert(status == DASM_S_OK);
 
-  // Adjust the memory permissions so it is executable
-  // but no longer writable.
+  /* adjust the memory permissions so it is executable
+   * but no longer writable. For security reasons. */
   int success = mprotect(mem, size, PROT_EXEC | PROT_READ);
   assert(success == 0);
 
 #ifndef NDEBUG
-  // Write generated machine code to a temporary file.
-  // View with:
-  //  objdump -D -b binary -mi386 -Mx86-64 /tmp/jitcode
-  // Or:
-  //  ndisasm -b 64 /tmp/jitcode
+  /* write generated machine code to a temporary file for debugging */
   FILE *f = fopen("/tmp/jitcode", "wb");
   fwrite(ret, size, 1, f);
   fclose(f);
