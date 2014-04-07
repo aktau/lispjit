@@ -1,6 +1,7 @@
 # Project-specific
 lisp
 src/prototype.h
+lisp.dSYM
 
 # Object files
 *.o
