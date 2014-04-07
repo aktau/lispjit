@@ -55,7 +55,17 @@ int main(int argc, char *argv[]) {
   /* |  movd xmm1, eax */
   /* |  shufps xmm0, xmm0, 0 */
 
-  |  mov eax, num
+  /* save the stack pointer */
+  |  mov rbx, rsp
+  /* align stack to 16 bytes, reserve 16 bytes, load dqword */
+  |  and rsp, -16
+  |  sub rsp, 16
+  |  mov dword [rsp], 0x3f800000
+  |  mov dword [rsp+4], 0x2a
+  |  mov dword [rsp+8], 42
+  |  mov dword [rsp+12], 333
+  |  movaps xmm1, [rsp]
+  |  push rbx
   |  push fnum
   |  push ifnum
   |  push fnum
@@ -86,6 +96,8 @@ int main(int argc, char *argv[]) {
   |  pop rdi
   |  pop rdi
   |  pop rdi
+  |  pop rsp
+  /* |  add rsp, 16 */
   |  ret
 
   float (*fltf)(float) = jitcode(&state);
