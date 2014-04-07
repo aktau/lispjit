@@ -17,11 +17,12 @@ int main(int argc, char *argv[]) {
   }
 
   int num = atoi(argv[1]);
-  float fnum = atof(argv[2]);
+  const float fnum = (float)atof(argv[2]);
+  int ifnum = *(int *)&fnum;
 
   dasm_State *state;
-  dasm_init(&state, 1);
-  dasm_setup(&state, actions);
+  /* dasm_init(&state, 1); */
+  /* dasm_setup(&state, actions); */
 
   // Generate the code.  Each line appends to a buffer in
   // "state", but the code in this buffer is not fully linked
@@ -30,37 +31,66 @@ int main(int argc, char *argv[]) {
   //
   // The run-time value of C variable "num" is substituted
   // into the immediate value of the instruction.
-  |  mov eax, num
-  |  ret
+  /* |  mov eax, num */
+  /* |  ret */
 
   // Link the code and write it to executable memory.
-  int (*fptr)() = jitcode(&state);
+  /* int (*fptr)() = jitcode(&state); */
 
   // Call the JIT-ted function.
-  int ret = fptr();
-  assert(num == ret);
+  /* int ret = fptr(); */
+  int ret = 42;
+  /* assert(num == ret); */
 
-  // Free the machine code.
-  free_jitcode(fptr);
+  /* free the machine code. */
 
-  dasm_free(&state);
+  /* free_jitcode(fptr); */
+  /* dasm_free(&state); */
 
   dasm_init(&state, 1);
   dasm_setup(&state, actions);
 
-  |  mov eax, num
-  |  mov eax, fnum
-  |  movd xmm0, eax
-  |  movd xmm1, eax
-  |  movd xmm2, eax
-  |  movd xmm3, eax
+  /* |  movss xmm0, fnum */
+  /* |  movd xmm0, eax */
+  /* |  movd xmm1, eax */
   /* |  shufps xmm0, xmm0, 0 */
-  /* |  addps xmm0, xmm0 */
+
+  |  mov eax, num
+  |  push fnum
+  |  push ifnum
+  |  push fnum
+  |  push ifnum
+  |  mov eax, ifnum
+  |  push ifnum
+  |  push ifnum
+  |  push ifnum
+  |  push fnum
+  |  push fnum
+  |  push fnum
+  |  mov eax, ifnum
+  |  mov eax, num
+  |  movd eax, xmm0
+  |  addps xmm0, xmm0
+  |  mulps xmm0, xmm0
+  |  push fnum
+  |  push ifnum
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
+  |  pop rdi
   |  ret
 
-  float (*fltf)() = jitcode(&state);
-  float fret = fltf();
-  printf("the float value is %f == %f (0x%X == 0x%X))\n", fnum, fret,
+  float (*fltf)(float) = jitcode(&state);
+  float fret = fltf(fnum);
+  printf("the float value is %f == %f (0x%x == 0x%x))\n", fnum, fret,
           *(int *)&fnum, *(int *)&fret);
   free_jitcode(fltf);
 
