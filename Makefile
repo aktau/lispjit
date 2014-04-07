@@ -11,9 +11,10 @@ WARN := -Wextra -Wcast-align -Wcast-qual \
 UNWARN := -Wno-sign-conversion -Wno-cast-align -Wno-conversion \
 	-Wno-incompatible-pointer-types
 DEBUG := -g3 -ggdb -DDEBUG
-OPT := -O2 -march=native -mtune=native -ftree-vectorize
+OPT := -O3 -march=native -mtune=native -ftree-vectorize
 
 CFLAGS ?= $(STD) $(SECURITY) $(WARN) $(UNWARN)
+LDFLAGS ?= -pagezero_size 10000 -image_base 10000000
 
 INC := -I.
 
@@ -21,14 +22,21 @@ EXECUTABLE := lisp
 
 all: $(EXECUTABLE)
 
+debug: CFLAGS += -O $(DEBUG)
+debug: $(EXECUTABLE)
+
+release: CFLAGS += $(DEBUG) $(OPT)
+release: $(EXECUTABLE)
+
 src/prototype.h: src/prototype.dasc
 	luajit dynasm/dynasm.lua $< > $@
 
 $(EXECUTABLE): src/dynasm-driver.c src/prototype.h
-	$(CC) $(CFLAGS) $(INC) -o $@ src/dynasm-driver.c -DJIT=\"prototype.h\"
+	$(CC) $(LDFLAGS) $(CFLAGS) $(INC) -o $@ src/dynasm-driver.c -DJIT=\"prototype.h\"
 
 clean:
 	rm -f $(EXECUTABLE) || true
+	rm -rf $(EXECUTABLE).dSYM || true
 	rm -rf src/prototype.h || true
 
 .PHONY: clean
