@@ -14,3 +14,24 @@ tips & tricks
   register](http://stackoverflow.com/questions/2231694/storing-two-x86-32-bit-registers-into-128-bit-xmm-register)
 - To see some of the crazy stuff that the JIT is generating, run `gobjdump
   -D -b binary -mi386 -Mx86-64 /tmp/jitcode`
+- [loading a 128-bit SSE register from immediates,
+  aligned](http://stackoverflow.com/questions/5007885/load-constant-floats-into-sse-registers)
+
+calling a function
+==================
+source: https://github.com/rdebath/Brainfuck/blob/master/bf2any/bf2jit.x86.dasc
+
+On x86-32, you can supply the function pointer as an immediate:
+
+```asm
+call &getchar
+```
+
+On x86-64, you have to move the 64-bit pointer into place first:
+
+```asm
+mov64 rax, (uintptr_t) getchar
+call rax
+```
+
+
