@@ -4,4 +4,11 @@ instructions
   http://board.flatassembler.net/topic.php?t=13102, also PSHUFD seems to be
   the only instruction that can take 4 words from the same register and
   shuffle them. Seems a bit strange but a poster says that...
+- MOVD is for integers, MOVSS is for floats, although they can technically
+  be used for both. It's a pipeline thing.
 
+tips & tricks
+=============
+
+- [storing two 32 bit registers into an xmm
+  register](http://stackoverflow.com/questions/2231694/storing-two-x86-32-bit-registers-into-128-bit-xmm-register)
