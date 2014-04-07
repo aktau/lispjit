@@ -1,5 +1,8 @@
 CC ?= clang
 
+# the place where the executable stores its assembled bincode
+DUMPFILE ?= /tmp/jitcode
+
 STD := -std=c11 -pedantic -fstrict-aliasing
 SECURITY := -D_THREAD_SAFE -D_FORTIFY_SOURCE=2
 WARN := -Wextra -Wcast-align -Wcast-qual \
@@ -28,6 +31,9 @@ debug: $(EXECUTABLE)
 release: CFLAGS += $(DEBUG) $(OPT)
 release: $(EXECUTABLE)
 
+inspect: $(DUMPFILE)
+	gobjdump -D -b binary -mi386 -Mx86-64 $<
+
 src/prototype.h: src/prototype.dasc
 	luajit dynasm/dynasm.lua $< > $@
 
@@ -39,4 +45,4 @@ clean:
 	rm -rf $(EXECUTABLE).dSYM || true
 	rm -rf src/prototype.h || true
 
-.PHONY: clean
+.PHONY: clean inspect debug release
