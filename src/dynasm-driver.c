@@ -11,14 +11,16 @@
 #include "dynasm/dasm_proto.h"
 #include "dynasm/dasm_x86.h"
 
-void *jitcode(dasm_State **state);
-void free_jitcode(void *code);
+typedef void (*cfunction)(void);
+
+cfunction jitcode(dasm_State **state);
+void free_jitcode(cfunction code);
 
 #include JIT
 
 /* either succeeds or exists the program, you will get a pointer to a
  * callable function. */
-void *jitcode(dasm_State **state) {
+cfunction jitcode(dasm_State **state) {
     /* optional sanity check */
     int status = dasm_checkstep(state, -1);
     assert(status == DASM_S_OK);
@@ -59,10 +61,10 @@ void *jitcode(dasm_State **state) {
     fclose(f);
 #endif
 
-    return ret;
+    return (cfunction) ret;
 }
 
-void free_jitcode(void *code) {
+void free_jitcode(cfunction code) {
     void *mem = (char*)code - sizeof(size_t);
     int status = munmap(mem, *(size_t*)mem);
     assert(status == 0);
