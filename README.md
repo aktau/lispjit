@@ -15,7 +15,11 @@ I will use this as research before starting to code:
 - [Hello JIT world, the joy of simple
   JITs](http://blog.reverberate.org/2012/12/hello-jit-world-joy-of-simple-jits.html)
 - [DynASM](http://luajit.org/dynasm.html)
-- [brainfuck2anything](https://github.com/rdebath/Brainfuck)
+- [Peeking inside
+  LuaJIT](http://pwparchive.wordpress.com/2012/10/16/peeking-inside-luajit/)
+- [brainf*ck2anything](https://github.com/rdebath/Brainfuck)
+- [A JIT Compiler for
+  brainf*ck](http://pwparchive.wordpress.com/2013/01/20/a-jit-compiler-for-brainfck/)
 - [Optimizing Assembly, by Agner
   Fog](http://www.agner.org/optimize/optimizing_assembly.pdf)
 - [Floating Point Instructions on modern x64

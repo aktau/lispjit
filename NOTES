@@ -19,7 +19,9 @@ tips & tricks
 
 calling a function
 ==================
-source: https://github.com/rdebath/Brainfuck/blob/master/bf2any/bf2jit.x86.dasc
+sources:
+- https://github.com/rdebath/Brainfuck/blob/master/bf2any/bf2jit.x86.dasc
+- http://www.corsix.org/content/calling-external-functions-x64-dynasm
 
 On x86-32, you can supply the function pointer as an immediate:
 
