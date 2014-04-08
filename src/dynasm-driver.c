@@ -16,7 +16,13 @@ typedef void (*cfunction)(void);
 cfunction jitcode(dasm_State **state);
 void free_jitcode(cfunction code);
 
+int float_bitmask(float f);
+
 #include JIT
+
+#ifndef STATIC_ASSERT
+#define STATIC_ASSERT(cond, msg) _Static_assert ((cond), msg);
+#endif
 
 /* either succeeds or exists the program, you will get a pointer to a
  * callable function. */
@@ -68,4 +74,13 @@ void free_jitcode(cfunction code) {
     void *mem = (char*)code - sizeof(size_t);
     int status = munmap(mem, *(size_t*)mem);
     assert(status == 0);
+}
+
+/* store a float in an integer so we can pass it to DynASM to use as an
+ * immediate. (DynASM interprets everything as integers) */
+int float_bitmask(float f) {
+    STATIC_ASSERT(sizeof(float) == sizeof(int), "float is not the same size as int");
+
+    union { float f; int i; } u = { .f = f };
+    return u.i;
 }

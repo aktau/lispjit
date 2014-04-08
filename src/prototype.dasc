@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
   }
 
   int num = atoi(argv[1]);
-  const float fnum = (float)atof(argv[2]);
-  int ifnum = *(int *)&fnum;
+  const float fl = (float)atof(argv[2]);
+  int fnum = float_bitmask(fl);
 
   dasm_State *state;
   /* dasm_init(&state, 1); */
@@ -50,60 +50,35 @@ int main(int argc, char *argv[]) {
   dasm_init(&state, 1);
   dasm_setup(&state, actions);
 
-  /* |  movss xmm0, fnum */
-  /* |  movd xmm0, eax */
-  /* |  movd xmm1, eax */
   /* |  shufps xmm0, xmm0, 0 */
 
-  /* save the stack pointer */
+  /* do some pushes to see what kind of values we get */
+  /* |  push dword fnum */
+  /* |  push dword num */
+  /* |  push dword fnum */
+  /* |  push dword num */
+  /* undo the stack modifications */
+  /* |  add rsp, 4*8 */
+
+  /* save the stack pointer to rbx */
   |  mov rbx, rsp
   /* align stack to 16 bytes, reserve 16 bytes, load dqword */
   |  and rsp, -16
   |  sub rsp, 16
-  |  mov dword [rsp], 0x3f800000
-  |  mov dword [rsp+4], 0x2a
-  |  mov dword [rsp+8], 42
-  |  mov dword [rsp+12], 333
-  |  movaps xmm1, [rsp]
+  |  mov dword [rsp], fnum
+  |  mov dword [rsp+4], fnum
+  |  mov dword [rsp+8], fnum
+  |  mov dword [rsp+12], fnum
+  |  movaps xmm0, [rsp]
+  /* push rbx (which contains the val of the stack ptr) on the stack */
   |  push rbx
-  |  push fnum
-  |  push ifnum
-  |  push fnum
-  |  push ifnum
-  |  mov eax, ifnum
-  |  push ifnum
-  |  push ifnum
-  |  push ifnum
-  |  push fnum
-  |  push fnum
-  |  push fnum
-  |  mov eax, ifnum
-  |  mov eax, num
-  |  movd eax, xmm0
-  |  addps xmm0, xmm0
-  |  mulps xmm0, xmm0
-  |  push fnum
-  |  push ifnum
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
-  |  pop rdi
   |  pop rsp
-  /* |  add rsp, 16 */
   |  ret
 
   float (*fltf)(float) = jitcode(&state);
   float fret = fltf(fnum);
-  printf("the float value is %f == %f (0x%x == 0x%x))\n", fnum, fret,
-          *(int *)&fnum, *(int *)&fret);
+  printf("the float value is %f == %f (0x%x == 0x%x) memcpy: 0x%x\n", fl, fret,
+          *(int *)&fl, *(int *)&fret, fnum);
   free_jitcode(fltf);
 
   dasm_free(&state);
