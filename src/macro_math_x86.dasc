@@ -1,0 +1,44 @@
+/**
+ * dot product
+ *
+ * Note that it is in fact much better to use a horizontal layout and use
+ * SSE2 instructions, as described by:
+ * - http://wiki.ros.org/PatrickMihelich/pcl_simd
+ * - http://stackoverflow.com/questions/17000999/c-intrinsics-sse2-dot-product-and-gcc-o3-generated-assembly
+ * - http://www.gamedev.net/topic/617959-c-dot-product-vs-sse-dot-product/
+ *
+ * Use these version only when the overhead of transforming the input data
+ * is too high.
+ *
+ * TODO: use FMA4 instructions
+ * - http://stackoverflow.com/questions/11321205/vectorizing-dot-product-calculation-using-sse4
+ *
+ * note that dot_prod_sse3 wastes quite a lot of lanes, if more dot products
+ * are needed be several techniques can be used:
+ * - http://software.intel.com/en-us/articles/implement-a-horizontal-addsubtract-with-sse3-instructions
+ * - http://stackoverflow.com/questions/11321205/vectorizing-dot-product-calculation-using-sse4
+ *
+ * NOTE: find a way not to use a spare register when it's not necessary,
+ * this is probably not really doable with dynasm as it stands.
+ */
+
+|.define SPARE, xmm7
+|.macro dot_prod_sse4, reg1, reg2
+|  dpps reg1, reg2, 0xf1
+|.endmacro
+|.macro dot_prod_sse3, reg1, reg2
+|  mulps reg1, reg2
+|  haddps reg1, reg1
+|  haddps reg1, reg1
+|.endmacro
+|.macro dot_prod_sse2, reg1, reg2
+|  mulps reg1, reg2
+/* SPARE = c, d, ?, ?  */
+|  movhlps SPARE, reg1
+|  addps reg1, SPARE
+/* store copy of reg1 in spare, shift right by 4 bytes */
+|  movaps SPARE, reg1
+|  psrldq SPARE, 4
+/* add that to reg1 so we have the full dot product in the least signif slot */
+|  addps reg1, SPARE
+|.endmacro

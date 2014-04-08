@@ -2,9 +2,20 @@
 // returns a given value, and executes it.
 // code by Josh Haberman
 
+/* note to self: on AVX-enabled processors, only generate instructions with
+ * the v-prefix, i.e.: vhaddps not haddps. */
+
 // DynASM directives.
 |.arch x64
 |.actionlist actions
+|
+/* note: destroys register, alternative impl possible */
+|.macro call_external, reg, addr
+|  mov64  reg, (uintptr_t)addr
+|  call   reg
+|.endmacro
+
+|.include src/macro_math_x86.dasc
 
 // This define affects "|" DynASM lines.  "Dst" must
 // resolve to a dasm_State** that points to a dasm_State*.
@@ -72,6 +83,12 @@ int main(int argc, char *argv[]) {
   |  movaps xmm0, [rsp]
   /* push rbx (which contains the val of the stack ptr) on the stack */
   |  push rbx
+  /* SSE 4 dot product, also try a macro of SSE2/3 instr later */
+  /* |  dpps xmm0, xmm0, 0xf1 */
+  /* |  dot_prod_sse4 xmm0, xmm0 */
+  /* |  dot_prod_sse3 xmm0, xmm0 */
+  |  dot_prod_sse2 xmm0, xmm0
+  /* restore the saved stack pointer */
   |  pop rsp
   |  ret
 
