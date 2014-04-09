@@ -17,6 +17,20 @@ tips & tricks
 - [loading a 128-bit SSE register from immediates,
   aligned](http://stackoverflow.com/questions/5007885/load-constant-floats-into-sse-registers)
 
+special swizzles
+----------------
+
+Some shuffles/swizzles get a special instruction, as noted:
+- http://blogs.msdn.com/b/chuckw/archive/2012/09/11/directxmath-sse3-and-ssse3.aspx
+- http://concatenative.org/wiki/view/SSE
+
+SSE1: 0 1 0 1 movlhps
+SSE1: 2 3 2 3 movhlps
+SSE1: 0 0 1 1 unpcklps
+SSE1: 2 2 3 3 unpckhps
+SSE3: 0 0 2 2 movsldup
+SSE3: 1 1 3 3 movshdup
+
 calling a function
 ==================
 sources:

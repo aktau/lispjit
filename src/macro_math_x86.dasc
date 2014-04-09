@@ -26,11 +26,33 @@
 |.macro dot_prod_sse4, reg1, reg2
 |  dpps reg1, reg2, 0xf1
 |.endmacro
+
 |.macro dot_prod_sse3, reg1, reg2
 |  mulps reg1, reg2
 |  haddps reg1, reg1
 |  haddps reg1, reg1
 |.endmacro
+
+/* this is a slightly more optimised version than microsoft's DirectX SSE2
+ * helper code, which went like this:
+ *
+ *  inline XMVECTOR XMVector4Dot(FXMVECTOR V1, FXMVECTOR V2) {
+ *      XMVECTOR vTemp2 = V2;
+ *      XMVECTOR vTemp = _mm_mul_ps(V1,vTemp2);
+ *      vTemp2 = _mm_shuffle_ps(vTemp2,vTemp,_MM_SHUFFLE(1,0,0,0));
+ *      vTemp2 = _mm_add_ps(vTemp2,vTemp);
+ *      vTemp = _mm_shuffle_ps(vTemp,vTemp2,_MM_SHUFFLE(0,3,0,0));
+ *      vTemp = _mm_add_ps(vTemp,vTemp2);
+ *      return XM_PERMUTE_PS(vTemp,_MM_SHUFFLE(2,2,2,2));
+ *  }
+ *
+ * ref:
+ * http://blogs.msdn.com/b/chuckw/archive/2012/09/11/directxmath-sse3-and-ssse3.aspx
+ *
+ * that version is more compatible though, as it broadcasts the result over
+ * all slots. Perhaps we can do that too, or make non-broadcast versions...
+ */
+
 |.macro dot_prod_sse2, reg1, reg2
 |  mulps reg1, reg2
 /* SPARE = c, d, ?, ?  */
