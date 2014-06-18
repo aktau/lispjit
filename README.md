@@ -10,6 +10,8 @@ articles
 
 I will use this as research before starting to code:
 
+- [The unofficial DynASM
+  documentation](http://corsix.github.io/dynasm-doc/index.html)
 - [A tiny C lisp interpreter by Seo
   Sanghyeon](https://gist.github.com/sanxiyn/523967)
 - [Hello JIT world, the joy of simple
