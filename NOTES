@@ -7,6 +7,26 @@ instructions
 - MOVD is for integers, MOVSS is for floats, although they can technically
   be used for both. It's a pipeline thing.
 
+asm
+===
+- Overkilling the 8 queens problem:
+  http://davidad.github.io/blog/2014/02/25/overkilling-the-8-queens-problem
+- Kernel from scratch:
+  http://davidad.github.io/blog/2014/02/18/kernel-from-scratch/
+- Making system calls from assembly in OSX (32 and 64-bit):
+  https://filippo.io/making-system-calls-from-assembly-in-mac-os-x/
+
+vm
+==
+
+- Ring buffers and mirrored memory, part I:
+  https://www.mikeash.com/pyblog/friday-qa-2012-02-03-ring-buffers-and-mirrored-memory-part-i.html
+
+clang/llvm
+==========
+- AST matchers and clang refactoring tools:
+  http://eli.thegreenplace.net/2014/07/29/ast-matchers-and-clang-refactoring-tools
+
 tips & tricks
 =============
 
