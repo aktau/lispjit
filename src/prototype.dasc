@@ -2,6 +2,13 @@
 // returns a given value, and executes it.
 // code by Josh Haberman
 
+#include <stdbool.h>
+#include <string.h>
+#include <stdio.h>
+
+#include "error.h"
+#include "registers.h"
+
 /* note to self: on AVX-enabled processors, only generate instructions with
  * the v-prefix, i.e.: vhaddps not haddps. */
 
@@ -19,7 +26,142 @@
 
 // This define affects "|" DynASM lines.  "Dst" must
 // resolve to a dasm_State** that points to a dasm_State*.
-#define Dst &state
+#define Dst &dasm_state
+
+static dasm_State *dasm_state;
+
+typedef struct {
+    reg_state_t regs;
+} state_t;
+
+static char errbuf[2048];
+
+/* how to quickly load a bunch of constants into a vector?
+ * http://stackoverflow.com/questions/6654099/how-to-move-128-bit-immediates-to-xmm-registers
+ * currently going for something that doesn't require messing with the stack
+ * pointer, it does require two vector registers though, which is painful as
+ * well */
+struct error vec_load(state_t *st, int *vidx, const char *buf) {
+    const char *pos = buf;
+
+    pos = strchr(buf, '(');
+    if (!pos) {
+        return RERR("no opening paren found", buf);
+    }
+    ++pos;
+
+    float f[4];
+    printf("buf: %s\n", pos);
+    sscanf(pos, "%f %f %f %f", f, f + 1, f + 2, f + 3);
+    printf("read floats: (%f %f %f %f)\n", f[0], f[1], f[2], f[3]);
+
+    pos = strchr(buf, ')');
+    if (!pos) {
+        return RERR("no closing paren found", buf);
+    }
+    ++pos;
+
+    int tidx = reg_get_64(st->regs);
+    if (tidx == REG_NONE) {
+        return RERR("no free temp register for vector load", buf);
+    }
+
+    *vidx = reg_get_128(st->regs);
+    if (*vidx == REG_NONE) {
+        return RERR("no free vector register for vector load", buf);
+    }
+
+    int tvidx = reg_get_128(st->regs);
+    if (tvidx == REG_NONE) {
+        return RERR("no free vector register for vector load", buf);
+    }
+
+    uint64_t low = *(uint64_t *) f;
+    uint64_t high = *(uint64_t *) (f + 2);
+    |  mov64 Rq(tidx), low
+    |  movd xmm(*vidx), Rq(tidx)
+    |  mov64 Rq(tidx), high
+    |  movd xmm(tvidx), Rq(tidx)
+    |  movlhps xmm(*vidx), xmm(tvidx)
+
+    /* deallocate the temp registers */
+    reg_put_64(st->regs, tidx);
+    reg_put_128(st->regs, tvidx);
+
+    return ROK(pos);
+}
+
+struct error compile(const char *buf) {
+    const char *pos = buf;
+
+    state_t st = {
+        .regs = X64_REGS_INIT
+    };
+
+    /* find the first parentheses and skip it */
+    pos = strchr(buf, '(');
+    if (!pos) {
+        return RERR("no paren found", buf);
+    }
+    ++pos;
+
+    /* single char operators only for now! */
+    char operator = *pos;
+    switch (operator) {
+        case '+':
+        case '-':
+        case '*':
+        case '/': {
+            /* TODO: ensure that there's two arguments */
+
+            /* plus takes two vector operands of equal or divisible size */
+            int arg1 = 0;
+            struct error err = vec_load(&st, &arg1, pos);
+            if (err.msg) {
+                return err;
+            }
+            pos = err.pos;
+
+            int arg2 = 0;
+            struct error err2 = vec_load(&st, &arg2, pos);
+            if (err2.msg) {
+                return err2;
+            }
+            pos = err2.pos;
+
+            switch (operator) {
+                case '+':
+                    | addps xmm(arg1), xmm(arg2)
+                    break;
+                case '-':
+                    | subps xmm(arg1), xmm(arg2)
+                    break;
+                case '*':
+                    | mulps xmm(arg1), xmm(arg2)
+                    break;
+                case '/':
+                    | divps xmm(arg1), xmm(arg2)
+                    break;
+            }
+
+            /* xmm0 is the return register for floating point values */
+            if (arg1 != 0) {
+                | movaps xmm0, xmm(arg1)
+            }
+        }
+        break;
+
+        default:
+            snprintf(errbuf, sizeof(errbuf), "didn't recognize operator '%c'", *pos);
+            return RERR(errbuf, pos);
+    }
+
+    |  ret
+
+    return ROK(pos);
+}
+
+const char *sample_code = "(- (10 20 30 40) (40 20 30 10))";
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -30,8 +172,6 @@ int main(int argc, char *argv[]) {
     int num = atoi(argv[1]);
     const float fl = (float)atof(argv[2]);
     int fnum = float_bitmask(fl);
-
-    dasm_State *state;
 
     // Generate the code.  Each line appends to a buffer in
     // "state", but the code in this buffer is not fully linked
@@ -47,8 +187,8 @@ int main(int argc, char *argv[]) {
     /* int (*fptr)() = jitcode(&state); */
     int ret = 42;
 
-    dasm_init(&state, 1);
-    dasm_setup(&state, actions);
+    dasm_init(Dst, 1);
+    dasm_setup(Dst, actions);
 
     /* |  shufps xmm0, xmm0, 0 */
 
@@ -59,6 +199,11 @@ int main(int argc, char *argv[]) {
     /* |  push dword num */
     /* undo the stack modifications */
     /* |  add rsp, 4*8 */
+
+    struct error err = compile(sample_code);
+    if (err.msg) {
+        fprintf(stderr, "err: %s\n", err.msg);
+    }
 
     /* save the stack pointer to rbx */
     |  mov rbx, rsp
@@ -81,13 +226,13 @@ int main(int argc, char *argv[]) {
     |  pop rsp
     |  ret
 
-    float (*fltf)(float) = jitcode(&state);
+    float (*fltf)(float) = jitcode(Dst);
     float fret = fltf(fnum);
     printf("the float value is %f == %f (0x%x == 0x%x) memcpy: 0x%x\n", fl, fret,
             *(int *)&fl, *(int *)&fret, fnum);
 
     free_jitcode(fltf);
-    dasm_free(&state);
+    dasm_free(Dst);
 
     return ret;
 }
