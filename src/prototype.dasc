@@ -111,7 +111,13 @@ struct error compile(const char *buf) {
         case '+':
         case '-':
         case '*':
-        case '/': {
+        case '/':
+        case '|':
+        case '&':
+        case '^':
+        case 'v':
+        case 'a':
+        case 'o': {
             /* TODO: ensure that there's two arguments */
 
             /* plus takes two vector operands of equal or divisible size */
@@ -142,6 +148,24 @@ struct error compile(const char *buf) {
                 case '/':
                     | divps xmm(arg1), xmm(arg2)
                     break;
+                case '|':
+                    | orps xmm(arg1), xmm(arg2)
+                    break;
+                case '&':
+                    | andps xmm(arg1), xmm(arg2)
+                    break;
+                case '^':
+                    | xorps xmm(arg1), xmm(arg2)
+                    break;
+                case 'v':
+                    | andnps xmm(arg1), xmm(arg2)
+                    break;
+                case 'a':
+                    | minps xmm(arg1), xmm(arg2)
+                    break;
+                case 'o':
+                    | maxps xmm(arg1), xmm(arg2)
+                    break;
             }
 
             /* xmm0 is the return register for floating point values */
@@ -161,7 +185,7 @@ struct error compile(const char *buf) {
     return ROK(pos);
 }
 
-const char *sample_code = "(- (10 20 30 40) (40 20 30 10))";
+const char *sample_code = "(o (10 20 30 40) (40 20 30 10))";
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
