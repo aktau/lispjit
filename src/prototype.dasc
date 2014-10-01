@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <x86intrin.h>
 
 #include "error.h"
 #include "registers.h"
@@ -93,6 +96,20 @@ struct error vec_load(state_t *st, int *vidx, const char *buf) {
     |  mov64 Rq(tidx), high
     |  movd xmm(tvidx), Rq(tidx)
     |  movlhps xmm(*vidx), xmm(tvidx)
+
+    /* an alternative using the stack (needs adjustment) */
+    /*
+    |  mov rbx, rsp
+    |  and rsp, -16
+    |  sub rsp, 16
+    |  mov dword [rsp], f[0]
+    |  mov dword [rsp+4], f[1]
+    |  mov dword [rsp+8], f[2]
+    |  mov dword [rsp+12], f[3]
+    |  movaps xmm0, [rsp]
+    |  push rbx
+    |  pop rsp
+    */
 
     /* deallocate the temp registers */
     reg_put_64(st->regs, tidx);
@@ -189,6 +206,8 @@ struct error compile(const char *buf) {
                 case OP_CROSS:
                     /* TODO: going to need shuffles and the like for cross
                      * product, implement later */
+
+                     /* |  shufps xmm0, xmm0, 0 */
                      snprintf(errbuf, sizeof(errbuf), "nyi: cross product: '%s'", pos);
                      return RERR(errbuf, pos);
                      break;
@@ -283,78 +302,29 @@ struct error compile(const char *buf) {
     return ROK(pos);
 }
 
-const char *sample_code = "(. (10 20 30 40) (40 20 30 10))";
+const char *sample_code = "(+ (10 20 30 40) (40 20 30 10))";
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <integer> <float>\n", argv[0]);
-        return 1;
-    }
-
-    int num = atoi(argv[1]);
-    const float fl = (float)atof(argv[2]);
-    int fnum = float_bitmask(fl);
-
-    // Generate the code.  Each line appends to a buffer in
-    // "state", but the code in this buffer is not fully linked
-    // yet because labels can be referenced before they are
-    // defined.
-    //
-    // The run-time value of C variable "num" is substituted
-    // into the immediate value of the instruction.
-    /* |  mov eax, num */
-    /* |  ret */
-
-    // Link the code and write it to executable memory.
-    /* int (*fptr)() = jitcode(&state); */
-    int ret = 42;
-
+int main() {
     dasm_init(Dst, 1);
     dasm_setup(Dst, actions);
 
-    /* |  shufps xmm0, xmm0, 0 */
-
-    /* do some pushes to see what kind of values we get */
-    /* |  push dword fnum */
-    /* |  push dword num */
-    /* |  push dword fnum */
-    /* |  push dword num */
-    /* undo the stack modifications */
-    /* |  add rsp, 4*8 */
-
+    /* Generate the code. Each line appends to a buffer in "state", but the
+     * code in this buffer is not fully linked yet because labels can be
+     * referenced before they are defined. */
     struct error err = compile(sample_code);
     if (err.msg) {
         fprintf(stderr, "err: %s\n", err.msg);
+        return EXIT_FAILURE;
     }
 
-    /* save the stack pointer to rbx */
-    |  mov rbx, rsp
-    /* align stack to 16 bytes, reserve 16 bytes, load dqword */
-    |  and rsp, -16
-    |  sub rsp, 16
-    |  mov dword [rsp], fnum
-    |  mov dword [rsp+4], fnum
-    |  mov dword [rsp+8], fnum
-    |  mov dword [rsp+12], fnum
-    |  movaps xmm0, [rsp]
-    /* push rbx (which contains the val of the stack ptr) on the stack */
-    |  push rbx
-    /* SSE 4 dot product, also try a macro of SSE2/3 instr later */
-    /* |  dpps xmm0, xmm0, 0xf1 */
-    /* |  dot_prod_sse4 xmm0, xmm0 */
-    /* |  dot_prod_sse3 xmm0, xmm0 */
-    |  dot_prod_sse2 xmm0, xmm0
-    /* restore the saved stack pointer */
-    |  pop rsp
-    |  ret
-
-    float (*fltf)(float) = jitcode(Dst);
-    float fret = fltf(fnum);
-    printf("the float value is %f == %f (0x%x == 0x%x) memcpy: 0x%x\n", fl, fret,
-            *(int *)&fl, *(int *)&fret, fnum);
+    /* link the code and write it to executable memory */
+    __m128 (*fltf)(void) = jitcode(Dst);
+    __m128 fret = fltf();
+    printf("the value in xmm0 is: (%f %f %f %f)\n",
+            fret[0], fret[1], fret[2], fret[3]);
 
     free_jitcode(fltf);
     dasm_free(Dst);
 
-    return ret;
+    return EXIT_SUCCESS;
 }
