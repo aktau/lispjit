@@ -124,6 +124,8 @@ struct error compile(const char *buf) {
         case OP_MUL:
         case OP_DIV:
         case OP_INV:
+        case OP_DOT:
+        case OP_CROSS:
         case OP_SQRT:
         case OP_RSQRT:
         case OP_AND:
@@ -173,6 +175,23 @@ struct error compile(const char *buf) {
                     /* TODO: this is actually unary */
                     | rcpps xmm(arg1), xmm(arg1)
                     break;
+                case OP_DOT:
+                    /* TODO: decide at runtime what we can generate, what
+                     * else is a JIT for if not this? */
+                    | .if have_sse4
+                    | dot_prod_sse4 xmm(arg1), xmm(arg2)
+                    | .elif have_sse3
+                    | dot_prod_sse3 xmm(arg1), xmm(arg2)
+                    | .else
+                    | dot_prod_sse2 xmm(arg1), xmm(arg2)
+                    | .endif
+                    break;
+                case OP_CROSS:
+                    /* TODO: going to need shuffles and the like for cross
+                     * product, implement later */
+                     snprintf(errbuf, sizeof(errbuf), "nyi: cross product: '%s'", pos);
+                     return RERR(errbuf, pos);
+                     break;
                 case OP_SQRT:
                     | sqrtps xmm(arg1), xmm(arg2)
                     break;
@@ -264,7 +283,7 @@ struct error compile(const char *buf) {
     return ROK(pos);
 }
 
-const char *sample_code = "(min (10 20 30 40) (40 20 30 10))";
+const char *sample_code = "(. (10 20 30 40) (40 20 30 10))";
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {

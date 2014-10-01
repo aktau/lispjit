@@ -8,6 +8,8 @@ typedef enum {
     OP_MUL,
     OP_DIV,
     OP_INV,
+    OP_DOT,
+    OP_CROSS,
     OP_SQRT,
     OP_RSQRT,
     OP_AND,
@@ -48,6 +50,8 @@ operation_t decode(const char *str) {
     if (TOKMATCH(str, toklen, "*")) return OP_MUL;
     if (TOKMATCH(str, toklen, "/")) return OP_DIV;
     if (TOKMATCH(str, toklen, "inv")) return OP_INV;
+    if (TOKMATCH(str, toklen, ".")) return OP_DOT;
+    if (TOKMATCH(str, toklen, "x")) return OP_CROSS;
     if (TOKMATCH(str, toklen, "sqrt")) return OP_SQRT;
     if (TOKMATCH(str, toklen, "rsqrt")) return OP_RSQRT;
     if (TOKMATCH(str, toklen, "&")) return OP_AND;
