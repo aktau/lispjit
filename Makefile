@@ -37,7 +37,7 @@ inspect: $(DUMPFILE)
 src/prototype.h: src/prototype.dasc
 	luajit dynasm/dynasm.lua $< > $@
 
-$(EXECUTABLE): src/dynasm-driver.c src/prototype.h
+$(EXECUTABLE): src/dynasm-driver.c src/prototype.h src/parse.h src/str.h src/error.h
 	$(CC) $(LDFLAGS) $(CFLAGS) $(INC) -o $@ src/dynasm-driver.c -DJIT=\"prototype.h\"
 
 clean:
