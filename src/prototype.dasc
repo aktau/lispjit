@@ -323,12 +323,12 @@ int main() {
     }
 
     /* link the code and write it to executable memory */
-    __m128 (*fltf)(void) = jitcode(Dst);
+    __m128 (*fltf)(void) = assemble(Dst);
     __m128 fret = fltf();
     printf("the value in xmm0 is: (%f %f %f %f)\n",
             fret[0], fret[1], fret[2], fret[3]);
 
-    free_jitcode(fltf);
+    free_code(fltf);
     dasm_free(Dst);
 
     return EXIT_SUCCESS;

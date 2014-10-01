@@ -13,8 +13,8 @@
 
 typedef void (*cfunction)(void);
 
-cfunction jitcode(dasm_State **state);
-void free_jitcode(cfunction code);
+cfunction assemble(dasm_State **state);
+void free_code(cfunction code);
 
 int float_bitmask(float f);
 
@@ -24,9 +24,9 @@ int float_bitmask(float f);
 #define STATIC_ASSERT(cond, msg) _Static_assert ((cond), msg);
 #endif
 
-/* either succeeds or exists the program, you will get a pointer to a
+/* either succeeds or exits the program, you will get a pointer to a
  * callable function. */
-cfunction jitcode(dasm_State **state) {
+cfunction assemble(dasm_State **state) {
     /* optional sanity check */
     int status = dasm_checkstep(state, -1);
     assert(status == DASM_S_OK);
@@ -70,7 +70,7 @@ cfunction jitcode(dasm_State **state) {
     return (cfunction) ret;
 }
 
-void free_jitcode(cfunction code) {
+void free_code(cfunction code) {
     void *mem = (char*)code - sizeof(size_t);
     int status = munmap(mem, *(size_t*)mem);
     assert(status == 0);
