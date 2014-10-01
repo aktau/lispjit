@@ -36,6 +36,17 @@ tips & tricks
   -D -b binary -mi386 -Mx86-64 /tmp/jitcode`
 - [loading a 128-bit SSE register from immediates,
   aligned](http://stackoverflow.com/questions/5007885/load-constant-floats-into-sse-registers)
+- [LiraNuna's SIMD
+  tricks](http://webcache.googleusercontent.com/search?q=cache:cMDSJGbFY-MJ:www.liranuna.com/sse-intrinsics-optimizations-in-popular-compilers/+&cd=3&hl=en&ct=clnk&gl=be)
+  - fast zero vector generation with xorps
+  - [instruction
+    pairing](http://webcache.googleusercontent.com/search?q=cache:1_TGc4tfc4kJ:avisynth.nl/index.php/Filter_SDK/Instruction_pairing+&cd=1&hl=en&ct=clnk&gl=be)
+    (this information looks possibly outdated, read phaeron's notes)
+  - telling me not to use immediates to load values into an SSE vector
+    because apparently it doesn't work well with caching (didn't exactly
+    expect that, it should be in the instruction cache AND prefetched, no?)
+- [vector normalization, SOA vs AOS vs. on the fly SOA (pretty
+  good)](https://software.intel.com/en-us/articles/3d-vector-normalization-using-256-bit-intel-advanced-vector-extensions-intel-avx)
 
 special swizzles
 ----------------
@@ -74,3 +85,9 @@ On x86-64, you have to move the 64-bit pointer into place first:
 mov64 rax, (uintptr_t) getchar
 call rax
 ```
+
+matrix operations
+=================
+- https://github.com/LiraNuna/glsl-sse2
+- https://github.com/rikusalminen/threedee-simd
+- https://github.com/p12tic/libsimdpp

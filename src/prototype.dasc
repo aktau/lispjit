@@ -304,6 +304,11 @@ struct error compile(const char *buf) {
 
 const char *sample_code = "(+ (10 20 30 40) (40 20 30 10))";
 
+/* TODO: can't wait until I'm able to run this and it works, and then check
+ * if I can make it generate code that's as good as manual instruction
+ * placement */
+const char *sample_fun = "(defun norm (x) (* x (rsqrt (dot x x))))";
+
 int main() {
     dasm_init(Dst, 1);
     dasm_setup(Dst, actions);
